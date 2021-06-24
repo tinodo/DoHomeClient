@@ -10,11 +10,11 @@
     {
         static void Main(string[] args)
         {
-            var helper = new DoHome.DoHomeClient();
-            helper.DeviceDiscovered += Helper_DeviceDiscovered;
-            helper.StartListener();
+            var client = new DoHomeClient();
+            client.DeviceDiscovered += Helper_DeviceDiscovered;
+            client.StartListener();
 
-            var first = helper.Devices.FirstOrDefault();
+            var first = client.Devices.FirstOrDefault();
             if (null == first)
             {
                 Console.WriteLine("No devices found!");
@@ -35,7 +35,7 @@
                 var dhc = new DoHomeColor(color);
                 Console.WriteLine(k.ToString());
                 //first.ChangeColor(dhc, false);
-                helper.ChangeColor(dhc, false, helper.Devices);
+                client.ChangeColor(dhc, false, client.Devices);
                 Thread.Sleep(250);
             }
 
@@ -178,7 +178,7 @@
             //first.ModifyTimer(timers.First().Index, DateTime.Now.AddSeconds(10), false);
             //timers = first.GetDevTimer();
             first.Off();
-            helper.StopListener();
+            client.StopListener();
             return;
         }
 
