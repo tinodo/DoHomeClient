@@ -1,4 +1,11 @@
-﻿namespace DoHome
+﻿//-----------------------------------------------------------------------
+// <copyright file="DoHomeDevice.cs" company="Company">
+//    Copyright (c) Tino Donderwinkel. All rights reserved.
+// </copyright>
+// <author>Tino Donderwinkel</author>
+//-----------------------------------------------------------------------
+
+namespace DoHome
 {
     using System;
     using System.IO;
@@ -8,111 +15,88 @@
     using System.Text;
     using System.Text.Json;
 
+    /// <summary>
+    /// The DoHome Device class.
+    /// </summary>
+    /// <remarks>
+    /// Devices should be discovered by a <see cref="DoHomeClient"/>.
+    /// Calling methods on this device will be executed over TCP.
+    /// To issue commands over UDP, use the methods available in the <see cref="DoHomeClient"/>.
+    /// </remarks>
     public class DoHomeDevice
     {
-        private DoHomeClient client;
+        /// <summary>
+        /// The <see cref="DoHomeClient"/> that discovered the device.
+        /// </summary>
+        private readonly DoHomeClient client;
+        
+        /// <summary>
+        /// The <see cref="TcpClient"/> that maintains a TCP connection to the <see cref="DoHomeDevice"/>.
+        /// </summary>
         private readonly TcpClient tcpClient;
 
+        /// <summary>
+        /// The identifier for the <see cref="DoHomeDevice"/> as used in UDP broadcast messages.
+        /// </summary>
         private string udpDeviceId;
 
-        public string UdpDeviceId
-        {
-            get
-            {
-                return this.udpDeviceId;
-            }
-        }
-
+        /// <summary>
+        /// The IP Address of the device on it's own WiFi network.
+        /// </summary>
         private IPAddress hostIp;
 
-        public IPAddress HostIp
-        {
-            get
-            {
-                return this.hostIp;
-            }
-        }
-
+        /// <summary>
+        /// The IP Address of the device on the connected WiFi routers network.
+        /// </summary>
         private IPAddress staIp;
 
-        public IPAddress StaIp
-        {
-            get
-            {
-                return this.staIp;
-            }
-        }
-
+        /// <summary>
+        /// The device identifier.
+        /// </summary>
         private string deviceId;
 
-        public string DeviceId
-        {
-            get
-            {
-                return this.deviceId;
-            }
-        }
-
-        private string deviceKey;
-
-        public string DeviceKey
-        {
-            get
-            {
-                return this.deviceKey;
-            }
-        }
-
+        /// <summary>
+        /// The device name.
+        /// </summary>
         private string deviceName;
 
-        public string DeviceName
-        {
-            get
-            {
-                return this.deviceName;
-            }
-        }
-
+        /// <summary>
+        /// The device type.
+        /// </summary>
         private string deviceType;
 
-        public string DeviceType
-        {
-            get
-            {
-                return this.deviceType;
-            }
-        }
-
+        /// <summary>
+        /// The name of the device manufacturer.
+        /// </summary>
         private string companyId;
 
-        public string CompanyId
-        {
-            get
-            {
-                return this.companyId;
-            }
-        }
+        /// <summary>
+        /// The device key.
+        /// </summary>
+        private string deviceKey;
 
+        /// <summary>
+        /// The chip used in the device.
+        /// </summary>
         private string chip;
 
-        public string Chip
-        {
-            get
-            {
-                return this.chip;
-            }
-        }
-
+        /// <summary>
+        /// The last known color of the device as discovered over UDP.
+        /// </summary>
         private DoHomeColor color;
 
-        public DoHomeColor Color
-        {
-            get
-            {
-                return this.color;
-            }
-        }
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DoHomeDevice"/> class.
+        /// </summary>
+        /// <param name="hostIp">The IP Address of the device on it's own WiFi network.</param>
+        /// <param name="staIp">The IP Address of the device on the connected WiFi routers network.</param>
+        /// <param name="deviceId">The device identifier.</param>
+        /// <param name="deviceKey">The device key.</param>
+        /// <param name="deviceName">The device name.</param>
+        /// <param name="deviceType">The device type.</param>
+        /// <param name="companyId">The name of the device manufacturer.</param>
+        /// <param name="chip">The chip used in the device.</param>
+        /// <param name="client">The <see cref="DoHomeClient"/> that discovered the device.</param>
         internal DoHomeDevice(IPAddress hostIp, IPAddress staIp, string deviceId, string deviceKey, string deviceName, string deviceType, string companyId, string chip, DoHomeClient client)
         {
             var tmp = deviceId.Split('_')[0];
@@ -129,55 +113,114 @@
             this.tcpClient = new TcpClient(this.StaIp.ToString(), 5555);
         }
 
-        internal void UpdateColor(DoHomeColor color)
+        /// <summary>
+        /// Gets the identifier for the <see cref="DoHomeDevice"/> as used in UDP broadcast messages.
+        /// </summary>
+        public string UdpDeviceId
         {
-            this.color = color;
+            get
+            {
+                return this.udpDeviceId;
+            }
         }
 
-        private uint GenerateTs()
+        /// <summary>
+        /// Gets the IP Address of the device on it's own WiFi network.
+        /// </summary>
+        public IPAddress HostIp
         {
-            var random = new Random(DateTime.Now.Millisecond);
-            var thirtyBits = (uint)random.Next(1 << 30);
-            var twoBits = (uint)random.Next(1 << 2);
-            var result = (thirtyBits << 2) | twoBits;
-            return result;
+            get
+            {
+                return this.hostIp;
+            }
         }
 
-        private JsonDocument SendCommand(string command)
+        /// <summary>
+        /// Gets the IP Address of the device on the connected WiFi routers network.
+        /// </summary>
+        public IPAddress StaIp
         {
-            if (!command.EndsWith("\r\n")) command += "\r\n";
+            get
+            {
+                return this.staIp;
+            }
+        }
 
-            JsonDocument result = null;
-            try
+        /// <summary>
+        /// Gets the device identifier.
+        /// </summary>
+        public string DeviceId
+        {
+            get
             {
-                var stream = this.tcpClient.GetStream();
-                var requestBytes = Encoding.ASCII.GetBytes(command);
-                stream.Write(requestBytes, 0, requestBytes.Length);
-                var responseBytes = new byte[1024];
-                var responseLength = stream.Read(responseBytes, 0, responseBytes.Length);
-                var response = Encoding.ASCII.GetString(responseBytes, 0, responseLength);
-                /// SUPER NASTY FIX FOR COMMAND 19 RESPONSE! FW 1.1.0 on W600
-                if (response.Contains("\"cmd\":19\",ip\"")) response = response.Replace("\"cmd\":19\",ip\"", "\"cmd\":19,\"ip\"");
-                /// /SUPER NASTY FIX FOR COMMAND 19 RESPONSE!
-                result = JsonDocument.Parse(response);
-                if (result.RootElement.TryGetProperty("res", out var res))
-                {
-                    if (res.GetInt32() != 0)
-                    {
-                        throw new Exception(((DoHomeErrorCode)res.GetInt32()).ToString());
-                    }
-                }
+                return this.deviceId;
             }
-            catch (InvalidOperationException)
+        }
+
+        /// <summary>
+        /// Gets the device key.
+        /// </summary>
+        public string DeviceKey
+        {
+            get
             {
+                return this.deviceKey;
             }
-            catch (IOException)
+        }
+
+        /// <summary>
+        /// Gets the device name.
+        /// </summary>
+        public string DeviceName
+        {
+            get
             {
+                return this.deviceName;
             }
-            catch (JsonException)
+        }
+
+        /// <summary>
+        /// Gets the device type.
+        /// </summary>
+        public string DeviceType
+        {
+            get
             {
+                return this.deviceType;
             }
-            return result;
+        }
+
+        /// <summary>
+        /// Gets the name of the device manufacturer.
+        /// </summary>
+        public string CompanyId
+        {
+            get
+            {
+                return this.companyId;
+            }
+        }
+
+        /// <summary>
+        /// Gets the chip used in the device.
+        /// </summary>
+        public string Chip
+        {
+            get
+            {
+                return this.chip;
+            }
+        }
+
+        /// <summary>
+        /// Gets the last known color of the device as discovered over UDP.
+        /// </summary>
+        public DoHomeColor Color
+        {
+            get
+            {
+                return this.color;
+            }
         }
 
         /// <summary>
@@ -192,7 +235,10 @@
         /// <summary>
         /// Gets hardware information about the bulb.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The hardware information string as returned by the device.</returns>
+        /// <remarks>
+        /// Currently, not used anywhere so the response is not parsed.
+        /// </remarks>
         public string GetDeviceInfo() // 4 -- "{"res":0,"cmd":4,"tz":13,"ver":"1.1.0","dev_id":"286dcd00fb6c_DT-WYRGB_W600","conn":1,"remote":0,"save_off_stat":1,"repeater":0,"portal":0,"chip":"W600"}"
         {
             // TODO: Implement response
@@ -206,11 +252,10 @@
         /// </summary>
         /// <param name="color">The color.</param>
         /// <param name="smoothing">A boolean, indicating whether to move from the previous color to the new color gradually (true), or to jump to the new color (false).</param>
-        /// <param name="smoothingDuration">If smoothing equals true, the duration of the transition in what appear to be 100ms intervals. (e.g. 10 means 1 second)</param>
+        /// <param name="smoothingDuration">If smoothing equals true, the duration of the transition in what appear to be 100 millisecond intervals. (e.g. 10 means 1 second)</param>
         /// <remarks>
         /// When using the Red, Green and Blue Gradients, set White and Warmth to 0 when using this.
         /// Setting White to a non-zero value will override Red, Green, Blue and Warmth. These will then be ignored.
-        /// Setting Warmth to a non-zero value will override Red, Green and Blue. These will then be ignored. Set White to 0 when using this.
         /// </remarks>
         public void ChangeColor(DoHomeColor color, bool smoothing, int? smoothingDuration = null) // 6
         {
@@ -226,15 +271,13 @@
             }
 
             this.SendCommand(command);
-            // FOR UDP:
-            //this.client.Send(command, this);
         }
 
         /// <summary>
         /// Switches the light off.
         /// </summary>
         /// <remarks>
-        /// Since some firmware does not allow cmd 5, this is implemented as a color change with all values set to 0.
+        /// Since some firmware versions does not allow command 5, this is implemented as a color change with all values set to 0.
         /// </remarks>
         public void Off() // 6
         {
@@ -256,28 +299,6 @@
             var response = this.SendCommand(command);
         }
 
-        // This is not enabled in the APP code!
-        //public void SetCustomMode(DoHomeLightMode mode, int frequency, params DoHomeColor[] colors) // 8
-        //{
-        //    using var stream = new MemoryStream();
-        //    using (var writer0 = new Utf8JsonWriter(stream))
-        //    {
-        //        writer0.WriteStartObject();
-        //        writer0.WriteNumber("cmd", 8);
-        //        writer0.WriteStartArray("colors");
-        //        foreach (var color in colors)
-        //        {
-        //            JsonSerializer.Serialize<DoHomeColor>(writer0, color);
-        //        }
-        //        writer0.WriteEndArray();
-        //        writer0.WriteNumber("mode", (int)mode);
-        //        writer0.WriteNumber("freq", frequency);
-        //        writer0.WriteEndObject();
-        //    }
-        //    string json0 = Encoding.UTF8.GetString(stream.ToArray());
-        //    var response = this.SendCommand(json0);
-        //}
-
         /// <summary>
         /// Gets the bulb's date and time.
         /// </summary>
@@ -287,17 +308,6 @@
             var command = "{\"cmd\":9}";
             var response = this.SendCommand(command);
             return DateTime.UnixEpoch.AddSeconds(response.RootElement.GetProperty("stamps").GetInt32());
-            // Alternative:
-            //var e = response.RootElement;
-            //var y = e.GetProperty("year").GetInt32();
-            //var m = e.GetProperty("mon").GetInt32();
-            //var d = e.GetProperty("day").GetInt32();
-            //var h = e.GetProperty("hour").GetInt32();
-            //var q = e.GetProperty("min").GetInt32();
-            //var s = e.GetProperty("sec").GetInt32();
-            //var result2 = DateTime.UnixEpoch.AddSeconds(e.GetProperty("stamps").GetInt32());
-            //var result = new DateTime(y, m, d, h, q, s);
-            //return result;
         }
 
         /// <summary>
@@ -321,7 +331,7 @@
         /// </summary>
         /// <param name="dateTime">The date and time when you want the bulb to turn off.</param>
         /// <param name="repeat">True, when this event will occur every day. False, when it only occurs once.</param>
-        /// <param name="ts">An identifier for this timer.</param>
+        /// <returns>The unique identifier of the timer.</returns>
         /// <remarks>
         /// When using repeat = true, the date will be ignored; it will occur every day.
         /// </remarks>
@@ -334,7 +344,7 @@
             var q = dateTime.Minute;
             var s = dateTime.Second;
             var r = repeat ? 1 : 0;
-            var ts = GenerateTs();
+            var ts = this.GenerateTs();
             var command = $"{{\"cmd\":13,\"ts\":{ts},\"year\":{y},\"month\":{m},\"day\":{d},\"hour\":{h},\"minute\":{q},\"second\":{s},\"repeat\":{r}}}";
             var response = this.SendCommand(command);
             return ts;
@@ -344,8 +354,8 @@
         /// Creates a timer used to turn on the bulb.
         /// </summary>
         /// <param name="dateTime">The date and time when you want the bulb to turn on.</param>
-        /// <param name="ts">An identifier for this timer.</param>
         /// <param name="repeat">True, when this event will occur every day. False, when it only occurs once.</param>
+        /// <returns>The unique identifier of the timer.</returns>
         public uint SetPowerupTimer(DateTime dateTime, bool repeat) // 14
         {
             var t = (int)DoHomeTimerType.TIMER_CONSTANT;
@@ -356,41 +366,11 @@
             var q = dateTime.Minute;
             var s = dateTime.Second;
             var r = repeat ? 1 : 0;
-            var ts = GenerateTs();
+            var ts = this.GenerateTs();
             var command = $"{{\"cmd\":14,\"ts\":{ts},\"year\":{y},\"month\":{m},\"day\":{d},\"hour\":{h},\"minute\":{q},\"second\":{s},\"type\":{t},\"repeat\":{r}}}";
             var response = this.SendCommand(command);
             return ts;
         }
-
-        // THIS IS ALL NOT IMPLEMENTED IN THE BULB (v1.1.0, W600 chip)
-        //public void SetPowerupTimer(DateTime dateTime, uint ts, DoHomeColor color, bool repeat) // 14
-        //{
-        //    var t = (int)DoHomeTimerType.TIMER_CONSTANT;
-        //    var y = dateTime.Year;
-        //    var m = dateTime.Month;
-        //    var d = dateTime.Day;
-        //    var h = dateTime.Hour;
-        //    var q = dateTime.Minute;
-        //    var s = dateTime.Second;
-        //    var r = repeat ? 1 : 0;
-        //    var command = $"{{\"cmd\":14,\"ts\":{ts},\"year\":{y},\"month\":{m},\"day\":{d},\"hour\":{h},\"minute\":{q},\"second\":{s},\"r\":{color.Red},\"g\":{color.Green},\"b\":{color.Blue},\"w\":{color.White},\"m\":{color.Warmth},\"type\":{t},\"repeat\":{r}}}";
-        //    var response = this.SendCommand(command);
-        //}
-        //public void SetPowerupTimer(DateTime dateTime, uint ts, DoHomeColorPattern colorPattern, bool repeat) // 14
-        //{
-        //    var t = (int)DoHomeTimerType.TIMER_PRESET_MODE;
-        //    var y = dateTime.Year;
-        //    var m = dateTime.Month;
-        //    var d = dateTime.Day;
-        //    var h = dateTime.Hour;
-        //    var q = dateTime.Minute;
-        //    var s = dateTime.Second;
-        //    var r = repeat ? 1 : 0;
-        //    var frequency = 5;
-        //    var index = 4;// (int)colorPattern;
-        //    var command = $"{{\"cmd\":14,\"ts\":{ts},\"year\":{y},\"month\":{m},\"day\":{d},\"hour\":{h},\"minute\":{q},\"second\":{s},\"freq\":{frequency},\"index\":{index},\"type\":{t},\"repeat\":{r}}}";
-        //    var response = this.SendCommand(command);
-        //}
 
         /// <summary>
         /// Sets the connected WiFi Router.
@@ -408,10 +388,10 @@
         /// Turns of the blub after specified minutes.
         /// </summary>
         /// <param name="minutes">Number of minutes after which to turn off the bulb.</param>
-        /// <param name="ts">An identifier for the timer schedule</param>
+        /// <returns>The unique identifier of the timer.</returns>
         public uint DelayShutdown(int minutes) // 17 -- {"res":0,"cmd":17}
         {
-            var ts = GenerateTs();
+            var ts = this.GenerateTs();
             var command = $"{{\"cmd\":17,\"time\":{minutes},\"ts\":{ts}}}";
             var response = this.SendCommand(command);
             return ts;
@@ -448,7 +428,7 @@
         /// </summary>
         /// <returns>A list of timers</returns>
         /// <remarks>
-        /// The result will include all timers like powerup and shutdown timers as well as delayed shutdown timers.
+        /// The result will include all timers like power-up and shutdown timers as well as delayed shutdown timers.
         /// </remarks>
         public DoHomeTimer[] GetDevTimer() // 21 -- "{"res":0,"cmd":21,"timers":[]}" or ValueKind = Object : "{"res":0,"cmd":21,"timers":[{"index":0,"ts":260673,"type":0,"repeat":1,"year":2021,"mon":6,"day":21,"hour":23,"min":0,"sec":0}]}"
         {
@@ -483,8 +463,7 @@
         /// <summary>
         /// Gets the current status of the light.
         /// </summary>
-        /// <returns>TOBEDEFINED</returns>
-        // Will always get results for type=1, although the actual mode could be something else.
+        /// <returns>The current <see cref="DoHomeColor"/> of the device.</returns>
         public DoHomeColor GetLedStatus() // 25 -- "{"res":0,"cmd":25,"r":0,"g":0,"b":0,"w":0,"m":0,"type":1}"
         {
             var command = "{\"cmd\":25}";
@@ -515,6 +494,9 @@
             var response = this.SendCommand(command);
         }
 
+        /// <summary>
+        /// Resets the device's access point configuration.
+        /// </summary>
         public void ResetAccessPoint() // 28
         {
             var command = "{\"cmd\":28}";
@@ -524,7 +506,7 @@
         /// <summary>
         /// Set the time zone offset, based on Beijing time.
         /// </summary>
-        /// <param name="offset"></param>
+        /// <param name="offset">The offset, in hours, from Beijing time.</param>
         /// <remarks>
         /// Beijing time is used by default, and it's offset is 19.
         /// UTC is 11.
@@ -546,6 +528,78 @@
         {
             var command = "{\"cmd\":201,\"en\":1}";
             var response = this.SendCommand(command);
+        }
+
+        /// <summary>
+        /// Updates the last known color of the device.
+        /// </summary>
+        /// <param name="color">The newly observed <see cref="DoHomeColor"/>.</param>
+        internal void UpdateColor(DoHomeColor color)
+        {
+            this.color = color;
+        }
+
+        /// <summary>
+        /// Generates a random <see cref="uint"/> to be used when creating new timers.
+        /// </summary>
+        /// <returns>A random <see cref="uint"/>.</returns>
+        private uint GenerateTs()
+        {
+            var random = new Random(DateTime.Now.Millisecond);
+            var thirtyBits = (uint)random.Next(1 << 30);
+            var twoBits = (uint)random.Next(1 << 2);
+            var result = (thirtyBits << 2) | twoBits;
+            return result;
+        }
+
+        /// <summary>
+        /// Sends a command over TCP.
+        /// </summary>
+        /// <param name="command">The command to send.</param>
+        /// <returns>A response from the devices (potentially <see cref="null"/>).</returns>
+        private JsonDocument SendCommand(string command)
+        {
+            if (!command.EndsWith("\r\n"))
+            {
+                command += "\r\n";
+            }
+
+            JsonDocument result = null;
+            try
+            {
+                var stream = this.tcpClient.GetStream();
+                var requestBytes = Encoding.ASCII.GetBytes(command);
+                stream.Write(requestBytes, 0, requestBytes.Length);
+                var responseBytes = new byte[1024];
+                var responseLength = stream.Read(responseBytes, 0, responseBytes.Length);
+                var response = Encoding.ASCII.GetString(responseBytes, 0, responseLength);
+                
+                if (response.Contains("\"cmd\":19\",ip\""))
+                {
+                    //// SUPER NASTY FIX FOR COMMAND 19 RESPONSE! FW 1.1.0 on W600
+                    response = response.Replace("\"cmd\":19\",ip\"", "\"cmd\":19,\"ip\"");
+                }
+
+                result = JsonDocument.Parse(response);
+                if (result.RootElement.TryGetProperty("res", out var res))
+                {
+                    if (res.GetInt32() != 0)
+                    {
+                        throw new Exception(((DoHomeErrorCode)res.GetInt32()).ToString());
+                    }
+                }
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            catch (IOException)
+            {
+            }
+            catch (JsonException)
+            {
+            }
+
+            return result;
         }
     }
 }

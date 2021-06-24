@@ -1,5 +1,18 @@
-﻿namespace DoHome
+﻿//-----------------------------------------------------------------------
+// <copyright file="DoHomeErrorCode.cs" company="Company">
+//    Copyright (c) Tino Donderwinkel. All rights reserved.
+// </copyright>
+// <author>Tino Donderwinkel</author>
+//-----------------------------------------------------------------------
+
+namespace DoHome
 {
+    using System.Diagnostics.CodeAnalysis;
+
+    /// <summary>
+    /// Error codes from a DoHome device.
+    /// </summary>
+    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1602:EnumerationItemsMustBeDocumented", Justification = "Reviewed.")]
     public enum DoHomeErrorCode
     {
         ERR_WIFI_NONE = 0,

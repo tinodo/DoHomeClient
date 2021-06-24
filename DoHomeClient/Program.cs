@@ -14,7 +14,7 @@
             client.StartListener();
 
             var first = client.Devices.FirstOrDefault();
-            if (null == first)
+            if (first == null)
             {
                 Console.WriteLine("No devices found!");
                 return;
