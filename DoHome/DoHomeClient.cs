@@ -18,7 +18,6 @@
 
         public event EventHandler<DeviceDiscoveredEventArgs> DeviceDiscovered;
 
-
         public delegate void DeviceDiscoveredEventHandler(object sender, DeviceDiscoveredEventArgs e);
 
         protected virtual void OnDeviceDiscovered(DoHomeDevice device)
@@ -37,7 +36,7 @@
         /// The UDP port to listen for device broadcasts.
         /// </summary>
         /// <remarks>
-        /// When a device is connected to a router, it actively sends a UDP Broadcast to port 6095, every two seconds, 10 times.
+        /// When a device is connected to a router, it actively sends a UDP Broadcast to port 6095, every two seconds, 10 times, whenever it is powered on.
         /// The broadcast content is the same as the response to a cmd=ping command.
         /// </remarks>
         private const int autoDiscoverUdpPort = 6095;
@@ -83,7 +82,7 @@
         }
 
         /// <summary>
-        /// Starts the UDP Listeners to listen for devices being powered on, and broadcasts from other devices.
+        /// Starts the UDP Listeners to listen for devices being powered on, and listen for broadcast responses.
         /// </summary>
         /// <param name="updateInterval">The interval to actively ask devices for updates. Set to 0 to disable, or to something above 500 to enable.</param>
         /// <param name="discoverInterval">The interval to actively search for new devices. Set to 0 to disable, or to something above 500 to enable.</param>
@@ -184,16 +183,9 @@
             this.Send("cmd=ping");
         }
 
-        //public void TEST()
-        //{
-        //    Console.WriteLine(this.ListenerState.ToString());
-        //    foreach (var task in this.listenerTasks)
-        //    {
-        //        Console.WriteLine($"Task {task.Id}: {task.Status}");
-        //    }
-
-        //    Console.WriteLine("");
-        //}
+        /// <summary>
+        /// Stops the broadcast listeners.
+        /// </summary>
         public void StopListener()
         {
             if (this.listenerState != DoHomeListenerState.Running && this.listenerState != DoHomeListenerState.Starting) return;
@@ -208,7 +200,9 @@
 
         internal void Send(string command, params DoHomeDevice[] devices)
         {
-            var message = "cmd=ctrl&devices={[" + string.Join(',', devices.Select(d => d.UdpDeviceId)) + "]}&op=" + command;
+            if (devices == null || devices.Length == 0) return;
+            var deviceIds = string.Join(',', devices.Select(d => d.UdpDeviceId));
+            var message = $"cmd=ctrl&devices={{[{deviceIds}]}}&op={command}";
             this.Send(message);
         }
 
@@ -231,25 +225,30 @@
 
         public void On(params DoHomeDevice[] devices)
         {
-            var deviceIds = string.Join(',', devices.Select(d => d.UdpDeviceId));
-            this.Send("cmd=ctrl&devices={[" + deviceIds + "]}&op={\"cmd\":6,\"r\":0,\"g\":0,\"b\":0,\"w\":5000,\"m\":4000,\"on\":1}");
-        }
-        public void Off(params DoHomeDevice[] devices)
-        {
-            var deviceIds = string.Join(',', devices.Select(d => d.UdpDeviceId));
-            this.Send("cmd=ctrl&devices={[" + deviceIds + "]}&op={\"cmd\":6,\"r\":0,\"g\":0,\"b\":0,\"w\":0,\"m\":0,\"on\":0}");
+            var command = "{\"cmd\":6,\"r\":0,\"g\":0,\"b\":0,\"w\":5000,\"m\":4000,\"on\":1}";
+            this.Send(command, devices);
         }
 
-        public void Test (string command, params DoHomeDevice[] devices)
+        public void Off(params DoHomeDevice[] devices)
         {
-            var deviceIds = string.Join(',', devices.Select(d => d.UdpDeviceId));
-            this.Send("cmd=ctrl&devices={[" + deviceIds + "]}&op=" + command + "\r\n");
+            var command = "{\"cmd\":6,\"r\":0,\"g\":0,\"b\":0,\"w\":0,\"m\":0,\"on\":0}";
+            this.Send(command, devices);
         }
-        public void Set(int red, int green, int blue, int white, int warmth, int on, int temp, int smooth, int t, params DoHomeDevice[] devices)
+
+        public void ChangeColor(DoHomeColor color, bool smoothing, params DoHomeDevice[] devices)
         {
             var deviceIds = string.Join(',', devices.Select(d => d.UdpDeviceId));
-            //this.Send("cmd=ctrl&devices={[" + deviceIds + $"]}}&op={{\"cmd\":6,\"r\":{red},\"g\":{green},\"b\":{blue},\"w\":{white},\"m\":{warmth},\"on\":{on},\"temp\":{temp},\"smooth\":{smooth},\"t\":{t}}}");
-            this.Send("cmd=ctrl&devices={[" + deviceIds + $"]}}&op={{\"cmd\":6,\"r\":{red},\"g\":{green},\"b\":{blue},\"w\":{white},\"smooth\":{smooth},\"t\":{t}}}");
+            var smooth = smoothing ? 1 : 0;
+            var command = $"{{\"cmd\":6,\"r\":{color.Red},\"g\":{color.Green},\"b\":{color.Blue},\"w\":{color.White},\"m\":{color.Warmth},\"smooth\":{smooth}}}";
+            this.Send(command, devices);
+        }
+
+        public void ChangeColor(DoHomeColor color, int smoothingDuration, params DoHomeDevice[] devices)
+        {
+            var deviceIds = string.Join(',', devices.Select(d => d.UdpDeviceId));
+            var smooth = 1;
+            var command = $"{{\"cmd\":6,\"r\":{color.Red},\"g\":{color.Green},\"b\":{color.Blue},\"w\":{color.White},\"m\":{color.Warmth},\"smooth\":{smooth},\"t\":{smoothingDuration}}}";
+            this.Send(command, devices);
         }
 
         protected virtual void OnDataReceived(UdpClient client, IPEndPoint endPoint, byte[] data)
@@ -286,7 +285,6 @@
                 {
                     case "ctrl":
                         // This is an echo of a command sent to a device.
-                        // THIS SHOULD NOT BE SEEN, CHECKED AT THE BEGINNING!
                         break;
                     case "pong":
                         if (response["compandy_id"] == "_DOIT" && response["device_type"] == "_DT-WYRGB")
@@ -308,7 +306,7 @@
                         var device2 = this.devices.SingleOrDefault(d => d.DeviceId == response["dev"]);
                         if (device2 == null) return; // echo from unknown device. Perhaps discover it?
                         var op = JsonSerializer.Deserialize<JsonElement>(response["op"]);
-                        Console.WriteLine($"Device {device2.UdpDeviceId} sent: {response["op"]}");
+                        //Console.WriteLine($"Device {device2.UdpDeviceId} sent: {response["op"]}");
                         switch (op.GetProperty("cmd").GetInt32())
                         {
                             case 25:
@@ -316,34 +314,34 @@
                                 device2.UpdateColor(color);
                                 break;
                             default:
-                                Console.WriteLine($"RECEIVED [{endPoint}] ON [{client.Client.LocalEndPoint}]: {message}");
+                                //Console.WriteLine($"RECEIVED [{endPoint}] ON [{client.Client.LocalEndPoint}]: {message}");
                                 break;
                         }
 
                         break;
                     default:
-                        Console.WriteLine($"Received unhandled message from {endPoint}: {message}");
+                        //Console.WriteLine($"Received unhandled message from {endPoint}: {message}");
                         break;
                 }
             }
             catch (KeyNotFoundException)
             {
-                Console.WriteLine($"Received invalid message from {endPoint}: {message}");
+                //Console.WriteLine($"Received invalid message from {endPoint}: {message}");
                 return;
             }
             catch (IndexOutOfRangeException)
             {
-                Console.WriteLine($"Received invalid message from {endPoint}: {message}");
+                //Console.WriteLine($"Received invalid message from {endPoint}: {message}");
                 return;
             }
             catch (JsonException)
             {
-                Console.WriteLine($"Received invalid message from {endPoint}: {message}");
+                //Console.WriteLine($"Received invalid message from {endPoint}: {message}");
                 return;
             }
             catch (ArgumentNullException)
             {
-                Console.WriteLine($"Received invalid message from {endPoint}: {message}");
+                //Console.WriteLine($"Received invalid message from {endPoint}: {message}");
                 return;
             }
         }

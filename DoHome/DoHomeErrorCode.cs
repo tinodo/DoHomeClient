@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DoHome
+﻿namespace DoHome
 {
     public enum DoHomeErrorCode
     {
-        ERR_WIFI_NONE = 0,   // No error
+        ERR_WIFI_NONE = 0,
         ERR_WIFI_SCAN_FAILED = 1,
         ERR_WIFI_SCAN_TIMEOUT = 2,
         ERR_WIFI_INVALID_PASSWORD = 3,

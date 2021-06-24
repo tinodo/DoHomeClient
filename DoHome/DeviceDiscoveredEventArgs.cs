@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DoHome
+﻿namespace DoHome
 {
+    using System;
+
     public class DeviceDiscoveredEventArgs : EventArgs
     {
         private readonly DoHomeDevice device;

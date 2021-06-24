@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-
-namespace DoHome
+﻿namespace DoHome
 {
+    using System;
+    using System.IO;
+    using System.Linq;
+    using System.Net;
+    using System.Net.Sockets;
+    using System.Text;
+    using System.Text.Json;
+
     public class DoHomeDevice
     {
         private DoHomeClient client;
@@ -144,6 +142,7 @@ namespace DoHome
             var result = (thirtyBits << 2) | twoBits;
             return result;
         }
+
         private JsonDocument SendCommand(string command)
         {
             if (!command.EndsWith("\r\n")) command += "\r\n";
@@ -198,8 +197,8 @@ namespace DoHome
         {
             // TODO: Implement response
             var command = "{\"cmd\":4}";
-            var response = this.SendCommand(command);            
-            return "done";
+            var response = this.SendCommand(command);
+            return response.ToString();
         }
 
         /// <summary>

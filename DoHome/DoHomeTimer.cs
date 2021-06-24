@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-
-namespace DoHome
+﻿namespace DoHome
 {
+    using System;
+    using System.Text.Json;
+
     public class DoHomeTimer
     {
         public DateTime DateTime { get; set; }
+
         public uint Ts { get; set; }
 
         public DoHomeTimerType TimerType { get; set; }
@@ -17,6 +14,7 @@ namespace DoHome
         public bool Repeat { get; set; }
 
         public int Index { get; set; }
+
         public DoHomeTimer(JsonElement element)
         {
             var y = element.GetProperty("year").GetInt32();
@@ -29,7 +27,7 @@ namespace DoHome
             this.Ts = element.GetProperty("ts").GetUInt32();
             this.TimerType = (DoHomeTimerType)element.GetProperty("type").GetInt32();
             this.Repeat = element.GetProperty("repeat").GetInt32() == 1 ? true : false;
-            var index = element.GetProperty("index").GetInt32();
+            this.Index = element.GetProperty("index").GetInt32();
         }
     }
 }

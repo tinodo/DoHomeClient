@@ -1,18 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using DoHome;
-using System.Drawing;
-
-namespace DoHomeClient
+﻿namespace DoHomeClient
 {
+    using System;
+    using System.Drawing;
+    using System.Linq;
+    using System.Threading;
+    using DoHome;
+
     class Program
     {
         static void Main(string[] args)
@@ -20,7 +13,6 @@ namespace DoHomeClient
             var helper = new DoHome.DoHomeClient();
             helper.DeviceDiscovered += Helper_DeviceDiscovered;
             helper.StartListener();
-            //Thread.Sleep(1000);
 
             var first = helper.Devices.FirstOrDefault();
             if (null == first)
@@ -37,14 +29,15 @@ namespace DoHomeClient
             var colorAllWarm = new DoHomeColor(0, 0, 0, 0, 5000);
 
             //Console.ReadLine();
-            //foreach (KnownColor k in Enum.GetValues(typeof(KnownColor)))
-            //{
-            //    var color = Color.FromKnownColor(k);
-            //    var dhc = new DoHomeColor(color);
-            //    Console.WriteLine(k.ToString());
-            //    first.ChangeColor(dhc, false);
-            //    Thread.Sleep(250);
-            //}
+            foreach (KnownColor k in Enum.GetValues(typeof(KnownColor)))
+            {
+                var color = Color.FromKnownColor(k);
+                var dhc = new DoHomeColor(color);
+                Console.WriteLine(k.ToString());
+                //first.ChangeColor(dhc, false);
+                helper.ChangeColor(dhc, false, helper.Devices);
+                Thread.Sleep(250);
+            }
 
             //for (int a = 5; a < 256; a+=10)
             //{
@@ -63,8 +56,7 @@ namespace DoHomeClient
             //    }
             //}
 
-            //Console.ReadLine();
-            //first.RouterConfig("2694BB42", "banaanbanaanbanaan");
+            Console.ReadLine();
             //first.DelayShutdown(1, 260673);
             //Thread.Sleep(5000);
             //first.SetPowerupTimer(DateTime.Now.AddSeconds(10), 668, DoHomeTimerType.TIMER_CONSTANT, false);
