@@ -13,6 +13,7 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageIcon>DT-WYRGB_W600.jpg</PackageIcon>
     <PackageIconUrl />
+    <Description>This simple library allows you to communicate with your DoHome Smart Bulbs.</Description>
   </PropertyGroup>
 
   <ItemGroup>
