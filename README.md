@@ -1,6 +1,6 @@
 # DoHomeClient
 
-This simple library allows you to communicate with your DoHome Smart Builbs.  
+This simple library allows you to communicate with your DoHome Smart Bulbs.  
 The library is targeting devices with the old W600 chip and firmware 1.1.0  
 It should work with newer version as well.  
 
