@@ -2,25 +2,25 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <Version>0.0.1</Version>
+    <Version>0.0.2</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Tino Donderwinkel</Authors>
     <Company />
     <PackageId>DoHomeClient</PackageId>
     <Product>DoHomeClient</Product>
     <PackageProjectUrl>https://github.com/tinodo/DoHomeClient</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/tinodo/DoHomeClient</RepositoryUrl>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/tinodo/DoHomeClient.git</RepositoryUrl>
+    <PackageLicenseFile></PackageLicenseFile>
     <PackageIcon>DT-WYRGB_W600.jpg</PackageIcon>
     <PackageIconUrl />
-    <Description>This simple library allows you to communicate with your DoHome Smart Bulbs.</Description>
+    <Description>Allows you to communicate with your WiFi-connected DoHome Smart Bulbs over TCP and UDP.
+Tested against devices with the W600 chip and the 1.1.0 firmware.</Description>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>DoHome,W600,bulb,lamp,smart,home automation,wifi</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\LICENSE">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
     <None Include="..\resources\DT-WYRGB_W600.jpg">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
