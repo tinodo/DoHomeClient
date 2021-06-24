@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PROJECT_FOLDER: './DoHome'
+      PACKAGE_PUBLISH_PAT: ${{ secrets.PACKAGE_PUBLISH_PAT }}
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET
@@ -19,8 +20,11 @@ jobs:
       with:
         dotnet-version: 5.0.x
     - name: Restore dependencies
-      working-directory: ${{env.PROJECT_FOLDER}}
+      working-directory: ${{ env.PROJECT_FOLDER }}
       run: dotnet restore
     - name: Build
-      working-directory: ${{env.PROJECT_FOLDER}}
+      working-directory: ${{ env.PROJECT_FOLDER }}
       run: dotnet build --no-restore --configuration Release
+    - name: Publish
+      working-directory: ${{ env.PROJECT_FOLDER }}
+      run: dotnet nuget push "bin/Release/DoHomeClient.*.nupkg" --api-key $PACKAGE_PUBLISH_PAT --source "github"
